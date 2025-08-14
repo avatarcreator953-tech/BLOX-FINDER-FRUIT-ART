@@ -1,0 +1,353 @@
+--[[
+  Blox Fruits Premium Finder
+  Автор: ArtSquadFive
+  Пароль: KDKBF222
+  Версия: 2.0
+]]
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Настройки
+local PASSWORD = "KDKBF222"
+local COLORS = {
+    background = Color3.fromRGB(25, 25, 35),
+    header = Color3.fromRGB(40, 40, 60),
+    button = Color3.fromRGB(0, 120, 215),
+    buttonHover = Color3.fromRGB(0, 150, 255),
+    closeButton = Color3.fromRGB(200, 50, 50),
+    text = Color3.fromRGB(255, 255, 255),
+    accent = Color3.fromRGB(255, 170, 0)
+}
+
+-- Создаем GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "PremiumFruitFinder"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Окно ввода пароля
+local passwordFrame = Instance.new("Frame")
+passwordFrame.Size = UDim2.new(0, 350, 0, 200)
+passwordFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
+passwordFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+passwordFrame.BackgroundColor3 = COLORS.background
+passwordFrame.BorderSizePixel = 0
+passwordFrame.Parent = screenGui
+
+local passwordTitle = Instance.new("TextLabel")
+passwordTitle.Size = UDim2.new(1, 0, 0, 50)
+passwordTitle.BackgroundColor3 = COLORS.header
+passwordTitle.Text = "ВВЕДИТЕ ПАРОЛЬ"
+passwordTitle.TextColor3 = COLORS.accent
+passwordTitle.Font = Enum.Font.GothamBold
+passwordTitle.TextSize = 20
+passwordTitle.Parent = passwordFrame
+
+local passwordInput = Instance.new("TextBox")
+passwordInput.Size = UDim2.new(0.8, 0, 0, 40)
+passwordInput.Position = UDim2.new(0.1, 0, 0.3, 0)
+passwordInput.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+passwordInput.TextColor3 = COLORS.text
+passwordInput.PlaceholderText = "Пароль..."
+passwordInput.Font = Enum.Font.Gotham
+passwordInput.TextSize = 16
+passwordInput.Parent = passwordFrame
+
+local passwordButton = Instance.new("TextButton")
+passwordButton.Size = UDim2.new(0.6, 0, 0, 40)
+passwordButton.Position = UDim2.new(0.2, 0, 0.65, 0)
+passwordButton.BackgroundColor3 = COLORS.button
+passwordButton.TextColor3 = COLORS.text
+passwordButton.Text = "ПОДТВЕРДИТЬ"
+passwordButton.Font = Enum.Font.GothamBold
+passwordButton.TextSize = 16
+passwordButton.Parent = passwordFrame
+
+-- Основной интерфейс
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = COLORS.background
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+
+-- Заголовок с возможностью перемещения
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 50)
+header.BackgroundColor3 = COLORS.header
+header.BorderSizePixel = 0
+header.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "ART FRUIT FINDER PREMIUM"
+title.TextColor3 = COLORS.accent
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+-- Кнопка закрытия (X)
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0.5, -15)
+closeButton.BackgroundColor3 = COLORS.closeButton
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.Text = "X"
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 18
+closeButton.Parent = header
+
+-- Кнопка обновления
+local refreshButton = Instance.new("TextButton")
+refreshButton.Size = UDim2.new(0.9, 0, 0, 40)
+refreshButton.Position = UDim2.new(0.05, 0, 0, 60)
+refreshButton.BackgroundColor3 = COLORS.button
+refreshButton.TextColor3 = COLORS.text
+refreshButton.Text = "ОБНОВИТЬ СПИСОК"
+refreshButton.Font = Enum.Font.GothamBold
+refreshButton.TextSize = 16
+refreshButton.Parent = mainFrame
+
+-- Список фруктов
+local fruitsList = Instance.new("ScrollingFrame")
+fruitsList.Size = UDim2.new(0.9, 0, 0, 380)
+fruitsList.Position = UDim2.new(0.05, 0, 0, 110)
+fruitsList.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+fruitsList.BorderSizePixel = 0
+fruitsList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+fruitsList.ScrollBarThickness = 5
+fruitsList.Parent = mainFrame
+
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.Padding = UDim.new(0, 5)
+uiListLayout.Parent = fruitsList
+
+-- Функции для анимаций
+local function tweenProperty(instance, property, targetValue, duration)
+    local tweenInfo = TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(instance, tweenInfo, {[property] = targetValue})
+    tween:Play()
+    return tween
+end
+
+local function pulseEffect(button)
+    local originalSize = button.Size
+    tweenProperty(button, "Size", UDim2.new(originalSize.X.Scale, originalSize.X.Offset, originalSize.Y.Scale, originalSize.Y.Offset + 5), 0.1).Completed:Wait()
+    tweenProperty(button, "Size", originalSize, 0.1)
+end
+
+-- Перемещение GUI
+local dragging, dragInput, dragStart, startPos
+
+local function updateInput(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        updateInput(input)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Проверка пароля
+local function checkPassword()
+    if passwordInput.Text == PASSWORD then
+        -- Анимация успеха
+        tweenProperty(passwordFrame, "BackgroundColor3", Color3.fromRGB(0, 200, 100), 0.3)
+        passwordButton.Text = "УСПЕШНО!"
+        wait(0.5)
+        
+        -- Плавное переключение на основной интерфейс
+        tweenProperty(passwordFrame, "Position", UDim2.new(0.5, -175, 0.5, -300), 0.5)
+        tweenProperty(passwordFrame, "BackgroundTransparency", 1, 0.5)
+        
+        mainFrame.Visible = true
+        mainFrame.Position = UDim2.new(0.5, -200, 0.5, -300)
+        mainFrame.BackgroundTransparency = 1
+        tweenProperty(mainFrame, "Position", UDim2.new(0.5, -200, 0.5, -250), 0.5)
+        tweenProperty(mainFrame, "BackgroundTransparency", 0, 0.5)
+        
+        wait(0.5)
+        passwordFrame:Destroy()
+    else
+        -- Анимация ошибки
+        tweenProperty(passwordFrame, "BackgroundColor3", Color3.fromRGB(200, 50, 50), 0.2)
+        passwordButton.Text = "НЕВЕРНО!"
+        wait(0.5)
+        tweenProperty(passwordFrame, "BackgroundColor3", COLORS.background, 0.3)
+        passwordButton.Text = "ПОДТВЕРДИТЬ"
+        passwordInput.Text = ""
+    end
+end
+
+passwordButton.MouseButton1Click:Connect(function()
+    pulseEffect(passwordButton)
+    checkPassword()
+end)
+
+passwordInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        pulseEffect(passwordButton)
+        checkPassword()
+    end
+end)
+
+-- Функция обновления списка фруктов
+local function updateFruitsList()
+    -- Очищаем старый список
+    for _, child in ipairs(fruitsList:GetChildren()) do
+        if child:IsA("Frame") then
+            tweenProperty(child, "BackgroundTransparency", 1, 0.2).Completed:Wait()
+            child:Destroy()
+        end
+    end
+
+    -- Анимация загрузки
+    local loadingText = Instance.new("TextLabel")
+    loadingText.Size = UDim2.new(1, 0, 0, 40)
+    loadingText.BackgroundTransparency = 1
+    loadingText.Text = "🔍 Поиск фруктов..."
+    loadingText.TextColor3 = COLORS.text
+    loadingText.Font = Enum.Font.Gotham
+    loadingText.TextSize = 16
+    loadingText.Parent = fruitsList
+
+    -- Ищем все фрукты в игре
+    local fruits = {}
+    for _, item in ipairs(workspace:GetDescendants()) do
+        if item:IsA("Tool") and item:FindFirstChild("Handle") then
+            table.insert(fruits, item)
+        end
+    end
+
+    -- Задержка для анимации
+    wait(0.5)
+    loadingText:Destroy()
+
+    if #fruits == 0 then
+        local noFruitsLabel = Instance.new("TextLabel")
+        noFruitsLabel.Size = UDim2.new(1, 0, 0, 40)
+        noFruitsLabel.BackgroundTransparency = 1
+        noFruitsLabel.Text = "Фрукты не найдены"
+        noFruitsLabel.TextColor3 = COLORS.text
+        noFruitsLabel.Font = Enum.Font.Gotham
+        noFruitsLabel.TextSize = 16
+        noFruitsLabel.Parent = fruitsList
+    else
+        -- Сортируем по алфавиту
+        table.sort(fruits, function(a, b) return a.Name < b.Name end)
+
+        for _, fruit in ipairs(fruits) do
+            local fruitFrame = Instance.new("Frame")
+            fruitFrame.Size = UDim2.new(1, 0, 0, 50)
+            fruitFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+            fruitFrame.BackgroundTransparency = 1
+            fruitFrame.Parent = fruitsList
+
+            local fruitName = Instance.new("TextLabel")
+            fruitName.Size = UDim2.new(0.6, 0, 1, 0)
+            fruitName.BackgroundTransparency = 1
+            fruitName.Text = "🍊 " .. fruit.Name
+            fruitName.TextColor3 = COLORS.text
+            fruitName.Font = Enum.Font.Gotham
+            fruitName.TextSize = 16
+            fruitName.TextXAlignment = Enum.TextXAlignment.Left
+            fruitName.Parent = fruitFrame
+
+            local teleportButton = Instance.new("TextButton")
+            teleportButton.Size = UDim2.new(0.35, 0, 0.8, 0)
+            teleportButton.Position = UDim2.new(0.65, 0, 0.1, 0)
+            teleportButton.BackgroundColor3 = COLORS.button
+            teleportButton.TextColor3 = COLORS.text
+            teleportButton.Text = "ТЕЛЕПОРТ"
+            teleportButton.Font = Enum.Font.GothamBold
+            teleportButton.TextSize = 14
+            teleportButton.Parent = fruitFrame
+
+            -- Анимация появления
+            tweenProperty(fruitFrame, "BackgroundTransparency", 0, 0.2)
+
+            -- Анимация кнопки телепорта
+            teleportButton.MouseEnter:Connect(function()
+                tweenProperty(teleportButton, "BackgroundColor3", COLORS.buttonHover)
+            end)
+            
+            teleportButton.MouseLeave:Connect(function()
+                tweenProperty(teleportButton, "BackgroundColor3", COLORS.button)
+            end)
+
+            -- Телепортация к фрукту
+            teleportButton.MouseButton1Click:Connect(function()
+                pulseEffect(teleportButton)
+                teleportButton.Text = "ТЕЛЕПОРТАЦИЯ..."
+                
+                local targetPosition = fruit.Handle.Position + Vector3.new(0, 3, 0)
+                local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad)
+                local tween = TweenService:Create(humanoidRootPart, tweenInfo, {
+                    CFrame = CFrame.new(targetPosition)
+                })
+                tween:Play()
+                
+                tween.Completed:Wait()
+                teleportButton.Text = "ТЕЛЕПОРТ"
+            end)
+        end
+    end
+end
+
+-- Обработчики кнопок
+refreshButton.MouseButton1Click:Connect(function()
+    pulseEffect(refreshButton)
+    updateFruitsList()
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- Анимация кнопок
+refreshButton.MouseEnter:Connect(function()
+    tweenProperty(refreshButton, "BackgroundColor3", COLORS.buttonHover)
+end)
+
+refreshButton.MouseLeave:Connect(function()
+    tweenProperty(refreshButton, "BackgroundColor3", COLORS.button)
+end)
+
+closeButton.MouseEnter:Connect(function()
+    tweenProperty(closeButton, "BackgroundColor3", Color3.fromRGB(220, 70, 70))
+end)
+
+closeButton.MouseLeave:Connect(function()
+    tweenProperty(closeButton, "BackgroundColor3", COLORS.closeButton)
+end)
+
+-- Первоначальное обновление списка
+updateFruitsList()
